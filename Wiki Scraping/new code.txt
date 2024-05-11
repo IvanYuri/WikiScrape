@@ -1,0 +1,72 @@
+import requests
+from bs4 import BeautifulSoup
+from collections import Counter
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def get_content(article_name):
+    url = 'https://en.wikipedia.org/wiki/' + article_name
+    res = requests.get(url)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    content = soup.find('div', {'id': 'mw-content-text', 'class': 'mw-body-content'})
+    return content
+
+def merge_contents(content):
+    cleaned_content = []
+    
+    for element in content.find_all(['p', 'h2', 'h3']):
+        for link in element.find_all('a', 'sup'):
+            link.extract()
+        cleaned_content.append(element.get_text())
+    return cleaned_content
+    
+def tokenize(content):
+    token_words = []
+    rejected = " "
+    
+    for element in content:
+        for word in element.split(rejected):
+            word = word.strip().lower()
+            token_words.append(word)
+    return token_words
+
+def count_frequency(collection):
+    word_cunt = Counter(collection)
+    return word_cunt
+
+def print_most_frequent(frequencies, n):
+    sorted_words = sorted(frequencies.items())
+    
+    for word, frequency in sorted_words[:n]:
+        print(f'{word}: {frequency}')
+def remove_stop_words(words, stop_words):
+    stop_words = ["the", "from", "have", "an", "can", "it", "on", "for", "has", "at", "a", "as", "of", "to", "in", "about", "or", "is", "if", "and", "that", "this", "way", "what", "by", "was", "are", "was", "be", ...]
+    filtered_words = [word for word in words if word not in stop_words]
+    return filtered_words
+
+def visualize_most_frequent_words(word_frequencies, n):
+    # Sort the word counts by frequency in descending order
+    sorted_word_counts = sorted(word_frequencies.items(), key=lambda x: x[1], reverse=True)
+
+    # Get the top n most frequent words and their frequencies
+    top_words, top_frequencies = zip(*sorted_word_counts[:n])
+
+    # Create a histogram
+    plt.figure(figsize=(10, 6))
+    plt.bar(top_words, top_frequencies)
+    plt.xlabel('Words')
+    plt.ylabel('Frequencies')
+    plt.title(f'Top {n} Most Frequent Words')
+    plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
+
+    # Show the histogram
+    plt.tight_layout()
+    plt.show()
+
+data = get_content('Ozone_layer')
+merge_content = merge_contents(data)
+collection = tokenize(merge_content)
+word_frequencies = count_frequency(collection)
+filtered_collection = remove_stop_words(collection, stop_words)
+filtered_word_frequencies = count_frequency(filtered_collection)
+visualize_most_frequent_words(filtered_word_frequencies, 25)
